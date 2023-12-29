@@ -1,0 +1,181 @@
+***********************************question 1****************************************
+DECLARE
+    CURSOR user_thing_cursor IS
+        SELECT u.IDUSER, u.Firstname, u.Lastname, COUNT(t.MAC) AS NumberOfThings
+        FROM dbaiot.users u
+        JOIN adminiot.user_thing t ON u.IDUSER = t.IDUSER
+        GROUP BY u.IDUSER, u.Firstname, u.Lastname;
+
+    v_IDUSER dbaiot.users.IDUSER%TYPE; -- Declare the missing variable
+    v_Firstname dbaiot.users.Firstname%TYPE;
+    v_Lastname  dbaiot.users.Lastname%TYPE;
+    v_NumberOfThings NUMBER;
+BEGIN
+    OPEN user_thing_cursor;
+    LOOP
+        FETCH user_thing_cursor INTO v_IDUSER, v_Firstname, v_Lastname, v_NumberOfThings;
+        EXIT WHEN user_thing_cursor%NOTFOUND;
+        DBMS_OUTPUT.PUT_LINE('User ID: ' || v_IDUSER || ', Name: ' || v_Firstname || ' ' || v_Lastname || ', Number of Things: ' || v_NumberOfThings);
+    END LOOP;
+
+    CLOSE user_thing_cursor;
+END;
+/
+
+
+**********************************************question 2********************************************
+
+
+DECLARE
+    v_service_id dbaiot.service.idservice%TYPE;
+    v_user_count NUMBER;
+
+    CURSOR service_cursor IS
+        SELECT idservice
+        FROM dbaiot.service;
+
+BEGIN
+    FOR service_rec IN service_cursor LOOP
+        v_service_id := service_rec.idservice;
+
+        SELECT COUNT(*) INTO v_user_count
+        FROM dbaiot.subscribe
+        WHERE idservice = v_service_id;
+        UPDATE dbaiot.service
+        SET nb_user = v_user_count
+        WHERE idservice = v_service_id;
+        DBMS_OUTPUT.PUT_LINE('Service ' || v_service_id || ': ' || v_user_count || ' users');
+    END LOOP;
+
+  
+    COMMIT;
+END;
+/
+
+
+*************************************************question3**************************************
+
+CREATE OR REPLACE PROCEDURE Expire AS
+    currentDate DATE;
+    subscriptionExpiryDate DATE;
+
+    v_IDUSER dbaiot.SUBSCRIBE.IDUSER%TYPE;
+    v_IDSERVICE dbaiot.SUBSCRIBE.IDSERVICE%TYPE;
+    v_EXPIRY_DATE dbaiot.SUBSCRIBE.ENDDATE%TYPE; -- Replace with the actual column name
+
+BEGIN
+    currentDate := SYSDATE;
+
+    FOR eachSubscription IN (SELECT * FROM dbaiot.SUBSCRIBE) LOOP
+        v_IDUSER := eachSubscription.IDUSER;
+        v_IDSERVICE := eachSubscription.IDSERVICE;
+        v_EXPIRY_DATE := eachSubscription.ENDDATE; -- Use the actual column name
+
+        IF currentDate > v_EXPIRY_DATE THEN
+
+            DBMS_OUTPUT.PUT_LINE('Subscription for user ' || v_IDUSER || ' to service ' || v_IDSERVICE || ' has expired.');
+        ELSE
+         
+
+            DBMS_OUTPUT.PUT_LINE('Subscription for user ' || v_IDUSER || ' to service ' || v_IDSERVICE || ' is still active.');
+        END IF;
+    END LOOP;
+
+    EXCEPTION
+        WHEN OTHERS THEN
+          
+            DBMS_OUTPUT.PUT_LINE('An error occurred: ' || SQLERRM);
+END Expire;
+/
+
+
+***********************************question4*************************************
+
+CREATE OR REPLACE FUNCTION calculate_period(
+    p_start_date IN DATE,
+    p_end_date IN DATE,
+    p_index IN VARCHAR2
+) RETURN NUMBER
+AS
+    period NUMBER;
+BEGIN
+    CASE p_index
+        WHEN 'D' THEN
+            period := p_end_date - p_start_date;
+        WHEN 'M' THEN
+            period := MONTHS_BETWEEN(p_end_date, p_start_date);
+        WHEN 'Y' THEN
+            period := (p_end_date - p_start_date) / 365; 
+        ELSE
+            RAISE_APPLICATION_ERROR(-20001, 'Invalid indicator. Use ''D'' for days, ''M'' for months, or ''Y'' for years.');
+    END CASE;
+
+    RETURN period;
+END calculate_period;
+/
+
+
+*****************************question 4 test sheet********************************
+DECLARE
+days NUMBER;
+months NUMBER;
+years NUMBER;
+
+BEGIN
+    FOR eachSubscription IN (SELECT * FROM dbaiot.SUBSCRIBE) 
+    LOOP
+    DBMS_OUTPUT.PUT_LINE('for service '||eachSubscription.IDSERVICE||' the period is:');
+   days:= calculate_period(eachSubscription.STARTDATE,eachSubscription.ENDDATE,'D');
+   DBMS_OUTPUT.PUT_LINE(days||' days');
+      months:= calculate_period(eachSubscription.STARTDATE,eachSubscription.ENDDATE,'M');
+   DBMS_OUTPUT.PUT_LINE(months||' months');
+      years:= calculate_period(eachSubscription.STARTDATE,eachSubscription.ENDDATE,'Y');
+   DBMS_OUTPUT.PUT_LINE(years||' years');
+    END LOOP;
+
+END;
+/
+
+***************************************question 5***************************************
+CREATE OR REPLACE PROCEDURE AddThing(
+    p_MAC IN VARCHAR2,
+    p_IDUSER IN NUMBER,
+    p_THINGTYPE IN VARCHAR2,
+    p_PARAM IN VARCHAR2
+)
+AS
+    v_user_exists NUMBER;
+    v_mac_exists NUMBER;
+BEGIN
+   
+    SELECT COUNT(*) INTO v_user_exists
+    FROM dbaiot.users
+    WHERE IDUSER = p_IDUSER;
+    SELECT COUNT(*) INTO v_mac_exists
+    FROM dbaiot.THING
+    WHERE MAC = p_MAC;
+    IF v_user_exists = 1 THEN
+        IF v_mac_exists = 0 THEN
+            INSERT INTO dbaiot.THING(MAC, IDUSER, THINGTYPE, PARAM)
+            VALUES (p_MAC, p_IDUSER, p_THINGTYPE, p_PARAM);
+
+            DBMS_OUTPUT.PUT_LINE('Thing added successfully.');
+        ELSE
+            DBMS_OUTPUT.PUT_LINE('Error: MAC address already exists.');
+        END IF;
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('Error: User does not exist.');
+    END IF;
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Error: ' || SQLERRM);
+END AddThing;
+/
+
+***************************************question 5 test sheet*******************************************
+
+
+BEGIN
+    AddThing('f0:de:f1:39:7f:30', 8,'', '');
+END;
+/
