@@ -1,0 +1,15 @@
+# depslib dependency file v1.0
+1699965589 source:c:\users\z-repair info\desktop\tp algoo\sortinsertion.c
+	<stdlib.h>
+
+1699293386 source:c:\users\z-repair info\desktop\tp algoo\sortingalgos.c
+	<stdio.h>
+	<stdlib.h>
+
+1700518154 source:c:\users\z-repair info\desktop\tp algoo\all.c
+	<stdio.h>
+	<stdlib.h>
+	<time.h>
+
+1700515292 source:c:\users\z-repair info\desktop\tp algoo\actuallyall.c
+
