@@ -1,0 +1,133 @@
+///////////////////////////////////////q1//////////////////////////////////////
+CREATE OR REPLACE TRIGGER trigger_insertion
+AFTER INSERT 
+ON dbaiot.users
+FOR EACH ROW
+DECLARE
+BEGIN
+    DBMS_OUTPUT.PUT_LINE('Un nouveau utilisateur est ajouté');
+END;
+/
+
+
+//////////////////////q1 modifie/////////////////////////////
+
+CREATE OR REPLACE TRIGGER trigger_update
+AFTER UPDATE 
+ON dbaiot.users
+FOR EACH ROW
+DECLARE
+BEGIN
+    DBMS_OUTPUT.PUT_LINE('Un utilisateur a été mis a jour');
+END;
+/
+
+
+////////////////////q1 supprimer///////////////////////
+
+CREATE OR REPLACE TRIGGER trigger_insertion
+AFTER DELETE 
+ON dbaiot.users
+FOR EACH ROW
+DECLARE
+BEGIN
+    DBMS_OUTPUT.PUT_LINE('Un utilisateur a été supprimé');
+END;
+/
+
+
+/////////////////////////q2///////////////////////
+
+CREATE OR REPLACE TRIGGER trigger_insert_thing
+AFTER INSERT ON dbaiot.thing
+FOR EACH ROW
+DECLARE
+    v_nom_utilisateur VARCHAR2(100);
+BEGIN
+    SELECT lastname || ' ' || firstname INTO v_nom_utilisateur
+    FROM dbaiot.users
+    WHERE iduser = :new.iduser;
+
+    DBMS_OUTPUT.PUT_LINE('Un nouveau objet est ajoute à lutilisateur ' || v_nom_utilisateur);
+END;
+/
+
+
+//////////////////////////q3////////////////////
+
+CREATE OR REPLACE TRIGGER trigger_verif_date_fin
+BEFORE UPDATE ON dbaiot.subscribe
+FOR EACH ROW
+DECLARE
+BEGIN
+    IF :new.enddate < :old.enddate THEN
+        RAISE_APPLICATION_ERROR(-20001, 'La nouvelle date de fin ne peut pas être inférieure à l''ancienne.');
+    END IF;
+END;
+/
+
+
+///////////////////////q4////////////////////////
+
+CREATE OR REPLACE TRIGGER trigger_calcul_utilisateurs
+AFTER INSERT OR DELETE ON dbaiot.subscribe
+FOR EACH ROW
+DECLARE
+    v_nombre_utilisateurs NUMBER;
+BEGIN
+    SELECT COUNT(DISTINCT iduser)
+    INTO v_nombre_utilisateurs
+    FROM dbaiot.subscribe
+    WHERE idservice = :new.idservice;
+
+    DBMS_OUTPUT.PUT_LINE('Le nombre d''utilisateurs souscris au service '
+                         || :new.idservice || ' est maintenant ' || v_nombre_utilisateurs);
+END;
+/
+
+
+/////////////////////////////q5/////////////////////////////
+
+CREATE OR REPLACE TRIGGER Turnover_Trigger
+AFTER INSERT OR DELETE ON dbaiot.subscribe
+FOR EACH ROW
+DECLARE
+BEGIN
+    UPDATE dbaiot.service
+    SET turnover = (
+        SELECT SUM(cost_subscription)
+        FROM dbaiot.subscribe
+        WHERE idservice = :new.idservice
+    )
+    WHERE idservice = :new.idservice;
+END;
+/
+
+
+
+///////////////////////q6////////////////////////
+
+CREATE OR REPLACE TRIGGER Subscription_Per_Day_Trigger
+AFTER INSERT ON dbaiot.subscribe
+FOR EACH ROW
+DECLARE
+    v_count NUMBER;
+BEGIN
+    SELECT COUNT(*)
+    INTO v_count
+    FROM dbaiot.subscription_per_day
+    WHERE date_sub = TRUNC(SYSDATE) AND idservice = :new.idservice;
+
+    IF v_count > 0 THEN
+        UPDATE dbaiot.subscription_per_day
+        SET total_per_day = total_per_day + :new.cost_subscription
+        WHERE date_sub = TRUNC(SYSDATE) AND idservice = :new.idservice;
+    ELSE
+        INSERT INTO dbaiot.subscription_per_day (date_sub, idservice, total_per_day)
+        VALUES (TRUNC(SYSDATE), :new.idservice, :new.cost_subscription);
+    END IF;
+END;
+/
+
+
+
