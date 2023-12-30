@@ -1,0 +1,8 @@
+# depslib dependency file v1.0
+1700570327 source:c:\users\z-repair info\desktop\projet2\project2.c
+
+1701173989 source:c:\users\z-repair info\desktop\projet2\main.c
+	<stdio.h>
+	<stdlib.h>
+	<time.h>
+
