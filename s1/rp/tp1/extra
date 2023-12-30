@@ -1,0 +1,83 @@
+
+        """open_list=[]
+        closed_list=[]
+        initial_node=Node(initial_state)
+        open_list.append(initial_node)
+        #add the check if current node isnt goal
+
+        while open_list:
+            
+                open_list.sort(key=lambda node: node.setF())     
+                current_node=open_list.pop(0)
+                adddd  check if its goal
+                if current_node.isGoal():
+                path= current_node.getPath()
+                print("goal reached")
+                return current_node, path
+                
+            best_successor=None
+            for successor_node in open_list:
+                    if best_successor is None or successor_node.setF()<best_successor.setF():
+                        best_successor=successor_node
+                
+            current_node=best_successor
+            if current_node.state.isGoal():
+                path= current_node.state.getPath()
+                print("goal reached")
+                return current_node, path
+            open_list.remove(current_node)
+            closed_list.append(current_node)
+
+            successors=current_node.state.successorFunction()
+            
+            for (action, successor) in successors:
+                successor.parent=current_node"""
+import queue
+from node import Node
+from rushHourPuzzle import RushHourPuzzle
+
+class Search:
+   print("yemak")
+   @staticmethod
+   def astar_search(initial_state, heuristic=1):
+    open_set = queue.PriorityQueue()
+    closed_set = set()
+
+    start_node = Node(initial_state, None, "", 1, heuristic)
+    open_set.put(start_node)
+    print("ymk 2")
+    while not open_set.empty():
+        current_node = open_set.get()
+
+        if current_node.state.isGoal():
+            return current_node.getSolution()
+
+        closed_set.add(current_node.state)
+
+        for action, successor_state in current_node.state.successorFunction():
+            successor_node = Node(successor_state, current_node, action, 1, heuristic)
+            print(action)
+            if successor_state not in closed_set:
+                open_set.put(successor_node)
+
+    return None
+
+    
+def main():
+
+    print("mok")
+
+if __name__ == "__main__":
+    puzzle_file = "tp1/rushHourPuzzle/1.csv"  # Replace with the path to your puzzle file
+    initial_state = RushHourPuzzle(puzzle_file)
+    heuristic = 1  # Choose heuristic 1, 2, or 3
+    solution = Search.astar_search(initial_state, heuristic)
+
+    if solution:
+        for action, state in solution:
+            print(f"Action: {action}")
+            for row in state:
+                print("".join(row))
+            print()
+    else:
+        print("No solution found.")
